@@ -36,11 +36,6 @@ def main():
                         add_generation_prompt=True,
                         return_tensors="pt",
                     )
-
-                terminators = [
-                        tokenizer.eos_token_id,
-                        tokenizer.convert_tokens_to_ids("<|eot_id|>")
-                    ]
                 
                 with torch.no_grad():
                     outputs = model.generate(
@@ -51,6 +46,10 @@ def main():
 
                 response_ids = outputs[0][input_ids.shape[-1]:]
                 response = tokenizer.decode(response_ids, skip_special_tokens=True)
+                response = response.strip()
+                if response.lower().startswith("atomic facts"):
+                    response = response.split(":", 1)[1].strip()
+
                 print("> ", response)
                 print("=" * 80)
                 
