@@ -1,0 +1,83 @@
+import torch
+import json
+import argparse
+from prompt import prompts
+import os
+from transformers import AutoTokenizer, AutoModelForCausalLM
+
+
+model_id = "Qwen/Qwen2.5-3B-Instruct"  
+prompt_variant = "atomic"
+input_path = "askqe_atomic_facts.jsonl"
+output_path = f"QG/qwen/{prompt_variant}_qg.jsonl"
+
+def main():
+    # =========================================== LLM Setup ===========================================
+    tokenizer = AutoTokenizer.from_pretrained(model_id)
+    model = AutoModelForCausalLM.from_pretrained(
+            model_id,
+            torch_dtype=torch.bfloat16,
+            device_map="auto",
+        )
+
+    # =========================================== Load Dataset ===========================================
+    #os.makedirs("QG/qwen", exist_ok=True)
+
+    with open(input_path, 'r') as f_in, open(output_path, 'w') as f_out:
+        for line in f_in:
+            data = json.loads(line)
+            sentence = data.get('src', None)
+            print(sentence)
+            if sentence:
+                prompt_template = prompts[prompt_variant]
+
+                # Default to 'vanilla' prompt format if atomic_facts are missing/empty
+                if prompt_variant == "atomic":
+                    atomics = data.get('atomic_facts', None)
+                    if atomics:
+                        prompt = prompt_template.replace("{{sentence}}", sentence).replace("{{atomic_facts}}", str(atomics))
+                    else:
+                        prompt = prompt_template.replace("{{sentence}}", sentence)
+
+                else:  # Default case (vanilla)
+                    prompt = prompt_template.replace("{{sentence}}", sentence)
+                
+                messages = [
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": prompt},
+                ]
+
+                input_ids = tokenizer.apply_chat_template(
+                        messages,
+                        add_generation_prompt=True,
+                        return_tensors="pt",
+                    )
+
+                terminators = [
+                        tokenizer.eos_token_id,
+                        tokenizer.convert_tokens_to_ids("<|eot_id|>")
+                    ]
+                
+                with torch.no_grad():
+                    outputs = model.generate(
+                        input_ids,
+                        max_new_tokens=1024,
+                        eos_token_id=tokenizer.eos_token_id,
+                    )
+
+                response = outputs[0][input_ids.shape[-1]:]
+                generated_questions = tokenizer.decode(response, skip_special_tokens=True)
+
+                if generated_questions:
+                    generated_questions = generated_questions.strip('"\'')
+                
+                print(f"> {generated_questions}")
+                print("\n======================================================\n")
+
+                data['questions'] = generated_questions
+                f_out.write(json.dumps(data, ensure_ascii=False) + '\n')
+            else:
+                pass
+
+if __name__ == "__main__":
+    main()
