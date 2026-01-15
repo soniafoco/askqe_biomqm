@@ -1,6 +1,6 @@
 import torch
 import json
-from QG.prompt import atomic_fact_prompt
+from prompt import atomic_fact_prompt
 import os
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
