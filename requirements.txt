@@ -16,3 +16,4 @@ protobuf
 requests
 huggingface_hub
 sentencepiece
+argparse

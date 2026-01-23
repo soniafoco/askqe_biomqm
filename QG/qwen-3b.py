@@ -7,9 +7,6 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 
 
 model_id = "Qwen/Qwen2.5-3B-Instruct"  
-prompt_variant = "atomic"
-input_path = "askqe_atomic_facts.jsonl"
-output_path = f"QG/qwen/{prompt_variant}_qg.jsonl"
 
 def main():
     # =========================================== LLM Setup ===========================================
@@ -17,22 +14,34 @@ def main():
     model = AutoModelForCausalLM.from_pretrained(
             model_id,
             torch_dtype=torch.bfloat16,
+             cache_dir="",
             device_map="auto",
         )
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--output_path", type=str)
+    parser.add_argument("--prompt", type=str)
+    args = parser.parse_args()
 
     # =========================================== Load Dataset ===========================================
-    #os.makedirs("QG/qwen", exist_ok=True)
 
-    with open(input_path, 'r') as f_in, open(output_path, 'w') as f_out:
+    with open("askqe_atomic_facts.jsonl", 'r') as f_in, open(args.output_path, 'w') as f_out:
         for line in f_in:
             data = json.loads(line)
             sentence = data.get('src', None)
             print(sentence)
             if sentence:
-                prompt_template = prompts[prompt_variant]
+                prompt_template = prompts[args.prompt]
 
                 # Default to 'vanilla' prompt format if atomic_facts are missing/empty
-                if prompt_variant == "atomic":
+                if args.prompt == "semantic":
+                    semantic = data.get('semantic_roles', None)
+                    if semantic:
+                        prompt = prompt_template.replace("{{sentence}}", sentence).replace("{{semantic_roles}}", semantic)
+                    else:
+                        prompt = prompt_template.replace("{{sentence}}", sentence)
+
+                if args.prompt == "atomic":
                     atomics = data.get('atomic_facts', None)
                     if atomics:
                         prompt = prompt_template.replace("{{sentence}}", sentence).replace("{{atomic_facts}}", str(atomics))
