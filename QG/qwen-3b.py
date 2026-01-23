@@ -10,6 +10,8 @@ model_id = "Qwen/Qwen2.5-3B-Instruct"
 
 def main():
     # =========================================== LLM Setup ===========================================
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     model = AutoModelForCausalLM.from_pretrained(
             model_id,
@@ -41,7 +43,7 @@ def main():
                     else:
                         prompt = prompt_template.replace("{{sentence}}", sentence)
 
-                if args.prompt == "atomic":
+                elif args.prompt == "atomic":
                     atomics = data.get('atomic_facts', None)
                     if atomics:
                         prompt = prompt_template.replace("{{sentence}}", sentence).replace("{{atomic_facts}}", str(atomics))
@@ -60,7 +62,7 @@ def main():
                         messages,
                         add_generation_prompt=True,
                         return_tensors="pt",
-                    )
+                    ).to(device)
 
                 terminators = [
                         tokenizer.eos_token_id,
@@ -71,7 +73,7 @@ def main():
                     outputs = model.generate(
                         input_ids,
                         max_new_tokens=1024,
-                        eos_token_id=tokenizer.eos_token_id,
+                        eos_token_id=terminators,
                     )
 
                 response = outputs[0][input_ids.shape[-1]:]
