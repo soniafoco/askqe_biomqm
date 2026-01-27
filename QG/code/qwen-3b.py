@@ -27,7 +27,7 @@ def main():
 
     # =========================================== Load Dataset ===========================================
 
-    with open("askqe_atomic_facts.jsonl", 'r') as f_in, open(args.output_path, 'w') as f_out:
+    with open("dev_with_backtranslation.jsonl", 'r') as f_in, open(args.output_path, 'w') as f_out:
         for line in f_in:
             data = json.loads(line)
             sentence = data.get('src', None)
