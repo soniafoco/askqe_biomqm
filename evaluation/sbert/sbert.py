@@ -16,9 +16,9 @@ nltk.download("punkt")
 tokenizer = AutoTokenizer.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
 model = AutoModel.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
 
-output_file = "biomqm_sbert.jsonl"
+output_file = "evaluation/sbert/biomqm_sbert.jsonl"
 
-with open(output_file, mode="r", encoding="utf-8") as out_f:
+with open(output_file, mode="a", encoding="utf-8") as out_f:
 
     predicted_file = "QA/vanilla_bt_qwen-3b.jsonl" 
     reference_file = "QA/vanilla_src_qwen-3b.jsonl"
