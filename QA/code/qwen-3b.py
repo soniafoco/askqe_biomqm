@@ -64,8 +64,8 @@ def main():
                 print(f"> {questions}")
                 print(f"> {generated_answers}")
                 print("\n======================================================\n\n")
-
-                data['answers'] = generated_answers
+                
+                data[f'answers_{args.sentence_type}'] = generated_answers
                 f_out.write(json.dumps(data, ensure_ascii=False) + '\n')
             else:
                 pass
