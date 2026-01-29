@@ -1,7 +1,5 @@
 import json
 import nltk
-import argparse
-import csv
 import torch
 from transformers import AutoTokenizer, AutoModel
 import torch.nn.functional as F
@@ -20,15 +18,10 @@ model = AutoModel.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
 
 output_file = "biomqm_sbert.jsonl"
 
-with open(output_file, mode="w", newline="", encoding="utf-8") as csvfile:
-    csv_writer = csv.writer(csvfile)
-    csv_writer.writerow(["language", "perturbation", "pipeline", "cosine_similarity", "num_comparison"])
+with open(output_file, mode="r", encoding="utf-8") as out_f:
 
-    predicted_file = f"../../QA/vanilla_bt_qwen-3b.jsonl" #CAMBIA
-    reference_file = f"../../QA/vanilla_src_qwen-3b.jsonl"
-
-    total_cosine_similarity = 0
-    num_comparisons = 0
+    predicted_file = "QA/vanilla_bt_qwen-3b.jsonl" 
+    reference_file = "QA/vanilla_src_qwen-3b.jsonl"
 
     try:
         with open(predicted_file, "r", encoding="utf-8") as pred_file, open(reference_file, "r", encoding="utf-8") as ref_file:
@@ -56,6 +49,10 @@ with open(output_file, mode="w", newline="", encoding="utf-8") as csvfile:
                         continue
                     if not predicted_answers or not reference_answers or len(predicted_answers) != len(reference_answers):
                         continue
+
+                    scores = []
+                    cosine_sim_list = []
+
                     for pred, ref in zip(predicted_answers, reference_answers):
                         if not isinstance(pred, str) or not isinstance(ref, str):
                             continue
@@ -76,8 +73,14 @@ with open(output_file, mode="w", newline="", encoding="utf-8") as csvfile:
                         ref_embeds = F.normalize(ref_embed, p=2, dim=1)
 
                         cos_sim = F.cosine_similarity(pred_embeds, ref_embeds, dim=1).mean().item()
-                        total_cosine_similarity += cos_sim
-                        num_comparisons += 1
+                        cosine_sim_list.append(cos_sim)
+                        scores.append({"cos_sim": cos_sim})
+
+                    pred_data.pop("answers", None)
+                    pred_data["scores"] = scores
+                    pred_data["avg_cos_similarity"] = sum(cosine_sim_list)/len(cosine_sim_list)
+
+                    out_f.write(json.dumps(pred_data, ensure_ascii=False) + "\n")
 
                 except json.JSONDecodeError as e:
                     print(f"Skipping a corrupted line due to JSONDecodeError: {e}")
@@ -85,19 +88,3 @@ with open(output_file, mode="w", newline="", encoding="utf-8") as csvfile:
 
     except FileNotFoundError as e:
         print(f"File not found: {e}")
-
-    if num_comparisons > 0:
-        avg_cosine_similarity = total_cosine_similarity / num_comparisons
-
-        print("-" * 80)
-        print("Average Scores:")
-        print(f"Num comparisons: {num_comparisons}")
-        print(f"Cosine Similarity: {avg_cosine_similarity:.3f}")
-        print("=" * 80)
-
-        with open(output_file, mode="a", newline="", encoding="utf-8") as csvfile:
-            csv_writer = csv.writer(csvfile)
-            csv_writer.writerow([avg_cosine_similarity, num_comparisons])
-
-    else:
-        print("No valid comparisons found in the JSONL files.")

@@ -1,6 +1,5 @@
 import torch
 import json
-import os
 import argparse
 from prompt import qa_prompt
 from transformers import AutoTokenizer, AutoModelForCausalLM
