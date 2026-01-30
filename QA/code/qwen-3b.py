@@ -27,6 +27,7 @@ def main():
 
     # =========================================== Load Dataset ===========================================
     with open(args.input_path, 'r') as f_in, open(args.output_path, 'a') as f_out:
+        
         for line in f_in:
             data = json.loads(line)
 
@@ -66,8 +67,10 @@ def main():
                 
                 data[f'answers'] = generated_answers
                 f_out.write(json.dumps(data, ensure_ascii=False) + '\n')
+                
             else:
-                pass
+                data["answers"] = []
+                f_out.write(json.dumps(data, ensure_ascii=False) + "\n")
 
 
 if __name__ == "__main__":
