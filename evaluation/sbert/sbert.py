@@ -56,9 +56,9 @@ with open(output_file, mode="a", encoding="utf-8") as out_f:
                         """
                         if not isinstance(pred, str) or not isinstance(ref, str):
                             continue
-                        """
                         if pred.strip() == "" or ref.strip() == "":
                             continue
+                        """
 
                         encoded_pred = tokenizer(str(pred), padding=True, truncation=True, return_tensors='pt')
                         encoded_ref = tokenizer(str(ref), padding=True, truncation=True, return_tensors='pt')
