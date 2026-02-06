@@ -16,7 +16,7 @@ try:
                 pred_data = json.loads(pred_line)
                 ref_data = json.loads(ref_line)
 
-                predicted_answers = pred_data.get("answers", [])
+                predicted_answers = pred_data.get("answers_bt", [])
                 reference_answers = ref_data.get("answers", [])
 
                 if isinstance(predicted_answers, str):
