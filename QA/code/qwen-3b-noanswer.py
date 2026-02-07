@@ -47,11 +47,17 @@ def main():
                         messages,
                         add_generation_prompt=True,
                         return_tensors="pt",
-                    ).to(device)
+                    )
+                
+                if not isinstance(input_ids, torch.Tensor):
+                    input_ids = torch.as_tensor(input_ids["input_ids"])
+
+
+                input_ids = input_ids.to(model.device)
                 
                 with torch.no_grad():
                     outputs = model.generate(
-                        input_ids,
+                        input_ids=input_ids,
                         max_new_tokens=1024,
                         eos_token_id=tokenizer.eos_token_id,
                     )
