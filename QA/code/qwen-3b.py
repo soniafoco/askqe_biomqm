@@ -65,11 +65,11 @@ def main():
                 print(f"> {generated_answers}")
                 print("\n======================================================\n\n")
                 
-                data[f'answers_bt'] = generated_answers
+                data[f'answers'] = generated_answers
                 f_out.write(json.dumps(data, ensure_ascii=False) + '\n')
                 
             else:
-                data["answers_bt"] = []
+                data["answers"] = []
                 f_out.write(json.dumps(data, ensure_ascii=False) + "\n")
 
 
