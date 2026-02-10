@@ -18,6 +18,7 @@ try:
 
                 predicted_answers = pred_data.get("answers", [])
                 reference_answers = ref_data.get("answers", [])
+                pred_data["answers_src"] = reference_answers
 
                 if isinstance(predicted_answers, str):
                     try:
@@ -50,7 +51,6 @@ try:
                     })
 
                 # Save per-row result
-                pred_data["answers_src"] = reference_answers
                 pred_data["scores"] = row_scores
 
                 f1_scores = [x["f1"]   for x in row_scores]
