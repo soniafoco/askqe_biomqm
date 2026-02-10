@@ -19,6 +19,7 @@ try:
                 predicted_answers = pred_data.get("answers", [])
                 reference_answers = ref_data.get("answers", [])
                 pred_data["answers_src"] = reference_answers
+                pred_data["answers_bt"] = predicted_answers
 
                 if isinstance(predicted_answers, str):
                     try:
