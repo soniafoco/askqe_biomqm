@@ -9,65 +9,45 @@ from tqdm import tqdm
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="NLI-based filtering of answers using sliding window entailment"
+        description="NLI-based filtering of answers using entailment"
     )
     parser.add_argument("--sentence_type", type=str, required=True,
                         help="Either SRC or BT")
     parser.add_argument("--input", type=str, required=True,
                         help="Input JSONL file with answers")
+    parser.add_argument("--output", type=str, required=True,
+                        help="Output JSONL file with entailed answers")
     parser.add_argument("--threshold", type=float, default=0.5,
                         help="Entailment probability threshold")
-    parser.add_argument("--window_tokens", type=int, default=350,
-                        help="Sliding window size in tokens")
-    parser.add_argument("--stride", type=int, default=200,
-                        help="Stride size in tokens")
     return parser.parse_args()
 
-
-def is_entailed_sliding(source,answer,tokenizer,model,device,threshold,window_tokens,stride):
-    """
-    Returns True if answer is entailed by ANY chunk of source.
-    """
-    source_tokens = tokenizer(
+def is_entailed_sentence(source, answer, tokenizer, model, device, threshold):
+    inputs = tokenizer(
         source,
-        truncation=False,
-        return_tensors=None
-    )["input_ids"]
+        answer,
+        truncation=True,
+        max_length=512,
+        return_tensors="pt"
+    ).to(device)
 
-    max_start = max(len(source_tokens) - window_tokens + 1, 1)
+    with torch.no_grad():
+        logits = model(**inputs).logits
 
-    for start in range(0, max_start, stride):
-        chunk_tokens = source_tokens[start:start + window_tokens]
+    probs = F.softmax(logits, dim=-1)
+    entailment_score = probs[0][2].item()  # entailment
 
-        if len(chunk_tokens) < 50:
-            continue
+    return entailment_score >= threshold
 
-        chunk_text = tokenizer.decode(chunk_tokens, skip_special_tokens=True)
 
-        inputs = tokenizer(
-            chunk_text,
-            answer,
-            truncation=True,
-            max_length=512,
-            return_tensors="pt"
-        ).to(device)
-
-        with torch.no_grad():
-            logits = model(**inputs).logits
-
-        probs = F.softmax(logits, dim=-1)
-        entailment_score = probs[0][2].item()  # index 2 = entailment
-
-        if entailment_score >= threshold:
-            return True
-
-    return False
+def wrap_answer(ans):
+    return f"The text mentions {ans}."
 
 
 def main():
     args = parse_args()
 
     nli_model_name = "roberta-large-mnli"
+    os.makedirs(os.path.dirname(args.output), exist_ok=True)
 
     tokenizer = AutoTokenizer.from_pretrained(nli_model_name)
     model = AutoModelForSequenceClassification.from_pretrained(nli_model_name)
@@ -79,7 +59,7 @@ def main():
     print("NLI model loaded on", device)
 
     with open(args.input, "r", encoding="utf-8") as fin, \
-         open(f"{args.input}_entailed", "w", encoding="utf-8") as fout:
+         open(args.output, "w", encoding="utf-8") as fout:
 
         for line_num, line in enumerate(tqdm(fin), start=1):
             try:
@@ -108,16 +88,30 @@ def main():
             if not isinstance(answers, list):
                 continue
 
+            # Ensure questions is a list
+            if isinstance(questions, str):
+                try:
+                    questions = json.loads(questions)
+                except Exception:
+                    questions = []
+
+            if not isinstance(questions, list):
+                continue
+
             entailed = []
 
             for i in range(len(answers)):
                 try:
-                    if is_entailed_sliding(source,answers[i],tokenizer,model,device,args.threshold,args.window_tokens,args.stride):
+                    wrapped_answer = wrap_answer(answers[i])
+                    if is_entailed_sentence(source,wrapped_answer,tokenizer,model,device,args.threshold):
                         entailed.append(answers[i])
                     else:
+                        print("\n\n\nNOT ENTAILED: ")
+                        print("ANSWER:", str(answers[i]))
+                        print("SOURCE", source)
                         questions.pop(i)
                 except Exception as e:
-                    print("NLI error on", answers[i][:50], e)
+                    print("NLI error: ", str(answers[i])[:50], e)
 
             obj["questions"] = questions
             obj["answers"] = entailed
