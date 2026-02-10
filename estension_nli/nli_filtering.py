@@ -5,7 +5,8 @@ import torch
 import torch.nn.functional as F
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from tqdm import tqdm
-
+import re
+import ast
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -20,6 +21,27 @@ def parse_args():
     parser.add_argument("--threshold", type=float, default=0.5,
                         help="Entailment probability threshold")
     return parser.parse_args()
+
+def normalize(text):
+    text = text.lower()
+    text = re.sub(r"[^a-z0-9\s]", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+def lexical_grounded(answer, source, min_overlap=2):
+    """
+    Returns True if answer shares at least `min_overlap`
+    content tokens with the source.
+    """
+    ans_tokens = set(normalize(answer).split())
+    src_tokens = set(normalize(source).split())
+
+    stopwords = {"the", "a", "an", "of", "to", "and", "is", "are"}
+    ans_tokens = ans_tokens - stopwords
+
+    overlap = ans_tokens & src_tokens
+    return len(overlap) >= min_overlap
+
 
 def is_entailed_sentence(source, answer, tokenizer, model, device, threshold):
     inputs = tokenizer(
@@ -39,14 +61,74 @@ def is_entailed_sentence(source, answer, tokenizer, model, device, threshold):
     return entailment_score >= threshold
 
 
-def wrap_answer(ans):
-    return f"The text mentions {ans}."
+def supported_in_text(source, answer, tokenizer, model, device, threshold=0.5):
+    """
+    Returns True ONLY if the answer introduces supported content.
+    """
+
+    # STEP 1: lexical grounding
+    if lexical_grounded(answer, source):
+        return True  
+
+    # STEP 2: NLI (solo se lessicalmente non grounded)
+    wrapped_answer = f"The text mentions {answer} or a synonim."
+    entailed = is_entailed_sentence(
+        source, wrapped_answer, tokenizer, model, device, threshold
+    )
+
+    return entailed
+
+
+def parse_maybe_list(x):
+    """
+    Handles:
+    - real lists
+    - JSON strings
+    - broken strings like: [687, 1514, number of participants, 581]
+    """
+    if isinstance(x, list):
+        return x
+
+    if isinstance(x, str):
+        # try JSON
+        try:
+            v = json.loads(x)
+            if isinstance(v, list):
+                return v 
+            else:
+                print(x)
+                return []
+        except Exception:
+            pass
+        
+        try:
+            v = list([str(x)])
+            if isinstance(v, list):
+                return v 
+            else:
+                print(x)
+                return []
+        except Exception:
+            pass
+
+        # try python-like list
+        try:
+            v = ast.literal_eval(x)
+            if isinstance(v, list):
+                return v 
+            else:
+                print(x)
+                return []
+        except Exception:
+            return []
+
+    return []
 
 
 def main():
     args = parse_args()
 
-    nli_model_name = "roberta-large-mnli"
+    nli_model_name = "cross-encoder/nli-deberta-v3-large"
     os.makedirs(os.path.dirname(args.output), exist_ok=True)
 
     tokenizer = AutoTokenizer.from_pretrained(nli_model_name)
@@ -78,48 +160,46 @@ def main():
             if not source:
                 continue
 
-            # Ensure answers is a list
-            if isinstance(answers, str):
+            answers = parse_maybe_list(answers)
+            questions = parse_maybe_list(questions)
+
+            entailed_answers = []
+            entailed_questions = []
+
+            for ans, q in zip(answers, questions):
+                print(q)
+                print(ans)
+                if str(ans).lower() =="yes" or str(ans).lower() =="no" or str(ans).lower() =="not specified":
+                    entailed_answers.append(ans)
+                    entailed_questions.append(q)
+                    continue
                 try:
-                    answers = json.loads(answers)
-                except Exception:
-                    answers = []
-
-            if not isinstance(answers, list):
-                continue
-
-            # Ensure questions is a list
-            if isinstance(questions, str):
-                try:
-                    questions = json.loads(questions)
-                except Exception:
-                    questions = []
-
-            if not isinstance(questions, list):
-                continue
-
-            entailed = []
-
-            for i in range(len(answers)):
-                try:
-                    wrapped_answer = wrap_answer(answers[i])
-                    if is_entailed_sentence(source,wrapped_answer,tokenizer,model,device,args.threshold):
-                        entailed.append(answers[i])
+                    if supported_in_text(str(ans), source, tokenizer, model, device, args.threshold):
+                        entailed_answers.append(ans)
+                        entailed_questions.append(q)
                     else:
-                        print("\n\n\nNOT ENTAILED: ")
-                        print("ANSWER:", str(answers[i]))
-                        print("SOURCE", source)
-                        questions.pop(i)
-                except Exception as e:
-                    print("NLI error: ", str(answers[i])[:50], e)
+                        print("\nNOT SUPPORTED:")
+                        print("ANSWER:", ans)
+                        print("SOURCE:", source)
 
-            obj["questions"] = questions
-            obj["answers"] = entailed
+                except Exception as e:
+                    print("Error", str(ans)[:50], e)
+
+            # FORCE JSON STRING REPRESENTATION
+            obj["answers"] = json.dumps(
+                [str(a) for a in entailed_answers],
+                ensure_ascii=False
+            )
+
+            obj["questions"] = json.dumps(
+                [str(q) for q in entailed_questions],
+                ensure_ascii=False
+            )
 
             fout.write(json.dumps(obj, ensure_ascii=False) + "\n")
             fout.flush()
 
-            print(len(entailed), "/", len(answers), "entailed")
+            print(len(entailed_answers), "/", len(answers), "entailed")
 
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()

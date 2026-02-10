@@ -79,7 +79,7 @@ with open(output_file, mode="a", encoding="utf-8") as out_f:
                         cosine_sim_list.append(cos_sim)
                         scores.append({"cos_sim": cos_sim})
 
-                    pred_data.pop("answers", None)
+                    pred_data["answers_src"] = reference_answers
                     pred_data["scores"] = scores
                     if len(cosine_sim_list) == 0:
                         pred_data["avg_cos_similarity"] = None

@@ -15,7 +15,7 @@ nltk.download("punkt")
 tokenizer = AutoTokenizer.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
 model = AutoModel.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
 
-output_file = "estension_nli/evaluation/sbert/biomqm_sbert_entailed.jsonl"
+output_file = "estension_nli/evaluation/biomqm_sbert_entailed.jsonl"
 
 with open(output_file, mode="a", encoding="utf-8") as out_f:
 

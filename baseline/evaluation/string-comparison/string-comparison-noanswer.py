@@ -50,7 +50,7 @@ try:
                     })
 
                 # Save per-row result
-                pred_data.pop("answers", None)
+                pred_data["answers_src"] = reference_answers
                 pred_data["scores"] = row_scores
 
                 f1_scores = [x["f1"]   for x in row_scores]

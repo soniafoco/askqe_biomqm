@@ -71,9 +71,9 @@ try:
 except FileNotFoundError as e:
     print(f"File not found: {e}")
 
-os.makedirs("evaluation/string-comparison", exist_ok=True)
+os.makedirs("estension_nli/evaluation", exist_ok=True)
 
-jsonl_output_file = "evaluation/string-comparison/biomqm_f1.jsonl"
+jsonl_output_file = "estension_nli/evaluation/biomqm_f1_entailed.jsonl"
 with open(jsonl_output_file, "w", encoding="utf-8") as jsonl_file:
     for row in results_list:
         jsonl_file.write(json.dumps(row, ensure_ascii=False) + "\n")

@@ -10,11 +10,11 @@ import ast
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="NLI-based filtering of answers using entailment"
+        description="NLI-based scoring of answers using entailment"
     )
-    parser.add_argument("--sentence_type", type=str, required=True,
-                        help="Either SRC or BT")
-    parser.add_argument("--input", type=str, required=True,
+    parser.add_argument("--input_src", type=str, required=True,
+                        help="Input JSONL file with answers")
+    parser.add_argument("--input_bt", type=str, required=True,
                         help="Input JSONL file with answers")
     parser.add_argument("--output", type=str, required=True,
                         help="Output JSONL file with entailed answers")
@@ -28,7 +28,7 @@ def normalize(text):
     text = re.sub(r"\s+", " ", text).strip()
     return text
 
-def lexical_grounded(answer, source, min_overlap=1):
+def lexical_grounded(answer, source, min_overlap=2):
     """
     Returns True if answer shares at least `min_overlap`
     content tokens with the source.
@@ -68,10 +68,10 @@ def supported_in_text(source, answer, tokenizer, model, device, threshold=0.5):
 
     # STEP 1: lexical grounding
     if lexical_grounded(answer, source):
-        pass  # NON nonsense
+        return True  
 
     # STEP 2: NLI (solo se lessicalmente non grounded)
-    wrapped_answer = f"The text mentions {answer}."
+    wrapped_answer = f"The text mentions {answer} or a synonim."
     entailed = is_entailed_sentence(
         source, wrapped_answer, tokenizer, model, device, threshold
     )
@@ -128,7 +128,7 @@ def parse_maybe_list(x):
 def main():
     args = parse_args()
 
-    nli_model_name = "roberta-large-mnli"
+    nli_model_name = "cross-encoder/nli-deberta-v3-large"
     os.makedirs(os.path.dirname(args.output), exist_ok=True)
 
     tokenizer = AutoTokenizer.from_pretrained(nli_model_name)
@@ -167,6 +167,8 @@ def main():
             entailed_questions = []
 
             for ans, q in zip(answers, questions):
+                print(q)
+                print(ans)
                 if str(ans).lower() =="yes" or str(ans).lower() =="no" or str(ans).lower() =="not specified":
                     entailed_answers.append(ans)
                     entailed_questions.append(q)
