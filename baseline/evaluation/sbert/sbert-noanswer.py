@@ -59,7 +59,7 @@ with open(output_file, mode="a", encoding="utf-8") as out_f:
                         if pred.strip() == "" or ref.strip() == "":
                             continue
                         """
-                        if pred.lower() == "no answer" or ref.lower() == "no answer":
+                        if str(pred).lower() == "no answer" or str(ref).lower() == "no answer":
                             continue
 
                         encoded_pred = tokenizer(str(pred), padding=True, truncation=True, return_tensors='pt')
