@@ -40,8 +40,6 @@ try:
 
                 row_scores = []
                 for pred, ref in zip(predicted_answers, reference_answers):
-                    if str(pred).lower() == "no answer" or str(ref).lower() == "no answer":
-                        continue
 
                     f1, EM, chrf, bleu = compare_answers(str(pred), str(ref))
                     row_scores.append({
