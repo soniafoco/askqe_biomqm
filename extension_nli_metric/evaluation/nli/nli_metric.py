@@ -108,6 +108,7 @@ def main():
                         continue
 
                     nli_scores = []
+                    scores_new = []
 
                     for pred, ref, question, score in zip(predicted_answers, reference_answers, questions, scores):
                         """
@@ -139,9 +140,11 @@ def main():
                             elif nli_label == 'neutral':
                                 nli_score = f1_score
                                 
+                        score["nli"] = nli_score
+                        scores_new.append(score)
                         nli_scores.append(nli_score)
                             
-                    data["nli_scores"] = nli_scores
+                    data["scores"] = scores_new
                     if len(nli_scores) == 0:
                         data["avg_nli"] = None
                     else:

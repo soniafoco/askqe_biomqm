@@ -5,8 +5,8 @@ import os
 
 nltk.download("punkt")
 
-predicted_file = "QA/vanilla_bt_qwen-3b.jsonl" 
-reference_file = "QA/vanilla_src_qwen-3b.jsonl"
+predicted_file = "QA/vanilla_bt_na_qwen-3b.jsonl" 
+reference_file = "QA/vanilla_src_na_qwen-3b.jsonl"
 
 results_list = []
 try:
