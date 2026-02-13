@@ -57,7 +57,7 @@ The evaluation scripts are designed to process and assess the quality of transla
 These scripts compute the similarity scores for each pair of `answer_src` and `answer_bt` related to one question, along with the average similarity among all answers for a sentence.
 While `sbert.py` focuses on calculating cosine similarity, `stringcomparison.py` extends this by calculating the four usual metrics for string comparison: F1, BLEU, ChrF, and EM. 
 
-#### evaluation/assign_severity.py
+### evaluation/assign_severity.py
 This scripts assigns each sentence to a severity label among "Critical", "Major", "Minor", "Neutral", "No error" based on the highest severity of the errors annotated in the sentence.
 
 ### evaluation/compare_results.py
