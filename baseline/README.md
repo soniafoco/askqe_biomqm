@@ -15,13 +15,13 @@ The AskQE framework addresses this by generating questions from the source text 
 
 ```
 ASKQE-BASELINE/
-├── QA/   #Scripts for Question Answering
-├── QG/   #Scripts for Question Answering  
-├── evaluation/   # Scripts for evaluation assessment
-├── backtranslation.py   # Backtranslation with Google Translate
-├── dev_with_backtranslation.py   # BioMQM dataset used in the original paper
-├── requirements.txt  # Requirements
-└── README.md           # This file
+├── QA/                            #Scripts for Question Answering
+├── QG/                            #Scripts for Question Answering  
+├── evaluation/                    # Scripts for evaluation assessment
+├── backtranslation.py             # Backtranslation with Google Translate
+├── dev_with_backtranslation.py    # BioMQM dataset used in the original paper
+├── requirements.txt               # Requirements
+└── README.md                      # This file
 ```
 
 
