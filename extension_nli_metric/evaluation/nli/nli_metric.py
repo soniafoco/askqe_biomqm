@@ -13,7 +13,9 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description="NLI-based scoring of answers using entailment"
     )
-    parser.add_argument("--input", type=str, required=True,
+    parser.add_argument("--input_f1", type=str, required=True,
+                        help="Input JSONL file with questions, answers (SRC and BT) and score")
+    parser.add_argument("--input_sbert", type=str, required=True,
                         help="Input JSONL file with questions, answers (SRC and BT) and sbert score")
     parser.add_argument("--output", type=str, required=True,
                         help="Output JSONL file with entailed answers")
@@ -74,15 +76,17 @@ def main():
     print("NLI model loaded on", device)
 
     try:
-        with open(args.input, "r", encoding="utf-8") as f_in, open(args.output, "w", encoding="utf-8") as out_f:
-            for line in f_in:
+        with open(args.input_f1, "r", encoding="utf-8") as f_in, open(args.input_sbert, "r", encoding="utf-8") as f_sbert, open(args.output, "w", encoding="utf-8") as out_f:
+            for line, line_sbert in zip(f_in, f_sbert):
                 try:
                     data = json.loads(line)
+                    data_sbert = json.loads(line_sbert)
 
                     predicted_answers = data.get("answers_bt", [])
                     reference_answers = data.get("answers_src", [])
                     questions = data.get("questions", [])
                     scores = data.get("scores", [])
+                    scores_sbert = data_sbert.get("scores", [])
 
                     if isinstance(predicted_answers, str):
                         try:
@@ -110,14 +114,13 @@ def main():
                     nli_scores = []
                     scores_new = []
 
-                    for pred, ref, question, score in zip(predicted_answers, reference_answers, questions, scores):
+                    for pred, ref, question, score, score_sbert in zip(predicted_answers, reference_answers, questions, scores, scores_sbert):
                         """
                         if not isinstance(pred, str) or not isinstance(ref, str):
                             continue
                         if pred.strip() == "" or ref.strip() == "":
                             continue
                         """
-
                         f1_score = score.get("f1", None)
                         if f1_score is None:
                             continue
@@ -141,14 +144,16 @@ def main():
                                 nli_score = f1_score
                                 
                         score["nli"] = nli_score
+                        score["cos_sim"] = score_sbert["cos_sim"]
                         scores_new.append(score)
                         nli_scores.append(nli_score)
-                            
+                        
                     data["scores"] = scores_new
                     if len(nli_scores) == 0:
                         data["avg_nli"] = None
                     else:
                         data["avg_nli"] = sum(nli_scores) / len(nli_scores)
+                    data["avg_cos_similarity"] = data_sbert["avg_cos_similarity"]
                 
                     out_f.write(json.dumps(data, ensure_ascii=False) + "\n")
 

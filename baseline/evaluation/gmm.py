@@ -70,7 +70,7 @@ if __name__ == "__main__":
     parser.add_argument('--input', type=str, required=True)
     parser.add_argument('--output', type=str, required=True)
     parser.add_argument('--metric', type=str, required=True, 
-                        choices=['cos_similarity', 'f1', 'chrf', 'bleu', 'nli'])
+                        choices=['cos_similarity', 'f1', 'chrf', 'bleu'])
     
     args = parser.parse_args()
     
