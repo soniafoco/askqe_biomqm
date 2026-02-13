@@ -18,6 +18,7 @@ def compare(input_file, output_file):
                         "EM": data["avg_em"],
                         "CHRF": data["avg_chrf"],
                         "BLEU": data["avg_bleu"],
+                        "SBERT": data["avg_cos_similarity"],
                         "NLI": data["avg_nli"]})
                 
             except json.JSONDecodeError as e:
