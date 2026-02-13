@@ -1,7 +1,6 @@
 import json
 import argparse
 
-
 # Define severity levels
 severity_levels = {"critical": 4, "major": 3, "minor": 2, "neutral": 1, "no error": 0}
 

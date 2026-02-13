@@ -9,7 +9,6 @@ parser.add_argument("--output_path", type=str)
 
 args = parser.parse_args()
 
-
 updated_jsonl = []
 with open(args.input_path, 'r', encoding='utf-8') as f:
     for line in f:

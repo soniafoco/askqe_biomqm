@@ -7,14 +7,13 @@ import argparse
 #is labeled as “reject”; otherwise, it is labeled as “accept”, and the updated records are written 
 #to a new JSONL output file.
 
-
 def annotate(input_file, output_file):
     with open(input_file, "r", encoding="utf-8") as infile, open(output_file, "w", encoding="utf-8") as outfile:
         for line in infile:
             data = json.loads(line.strip())
             reject_decision = False
-            if "target_errors" in data:
-                for error in data["target_errors"]:
+            if "errors_tgt" in data:
+                for error in data["errors_tgt"]:
                     if error.get("severity", "").lower() in ["critical", "major"]:
                         reject_decision = True
                         break

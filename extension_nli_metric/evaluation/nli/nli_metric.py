@@ -40,12 +40,10 @@ def get_nli_label(model, tokenizer, device, question, pred, ref):
 
     probs = F.softmax(logits, dim=-1)
 
-    # Estrai i punteggi di ogni classe
     entailment_score = probs[0][2].item()  # entailment
     contradiction_score = probs[0][0].item()  # contradiction
     neutral_score = probs[0][1].item()  # neutral
 
-    # Decidere la label in base alla probabilità massima
     if entailment_score > contradiction_score and entailment_score > neutral_score:
         label = 'entailment'
     elif contradiction_score > entailment_score and contradiction_score > neutral_score:
