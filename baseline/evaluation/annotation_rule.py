@@ -30,8 +30,8 @@ def annotate(input_file, output_file):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--input', type=str, required=True)
-    parser.add_argument('--ouput', type=str, required=True)
+    parser.add_argument('--output', type=str, required=True)
     
     args = parser.parse_args()
 
-    annotate(args.input, args.ouput)
+    annotate(args.input, args.output)
